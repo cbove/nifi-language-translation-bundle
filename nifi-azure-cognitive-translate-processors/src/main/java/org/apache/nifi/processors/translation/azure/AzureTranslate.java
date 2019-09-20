@@ -41,7 +41,7 @@ public class AzureTranslate extends AbstractProcessor {
 //	private Translation translation;
 	
 	// Request Headers
-	private static String subscription_key = "91268f3cc0554198a3ba8c4ac31967df";
+	private static String subscription_key = "****************";
 	private static String subscription_region = "eastus";
 	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
 	private static String default_input_text = "Лучшее время, чтобы посадить дерево, было 20 лет назад. Следующее лучшее время – сегодня.";
