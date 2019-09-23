@@ -7,8 +7,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.nifi.annotation.behavior.InputRequirement;
+import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
 import org.apache.nifi.annotation.behavior.TriggerWhenEmpty;
+import org.apache.nifi.annotation.lifecycle.OnScheduled;
+import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
+import org.apache.nifi.expression.ExpressionLanguageScope;
 import org.apache.nifi.flowfile.FlowFile;
 import org.apache.nifi.processor.AbstractProcessor;
 import org.apache.nifi.processor.ProcessContext;
@@ -30,6 +35,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 @TriggerWhenEmpty
+@InputRequirement(Requirement.INPUT_ALLOWED)
 public class AzureTranslate extends AbstractProcessor {
 	// Skipping all optional parameters for now
 	// Request Parameters
@@ -53,6 +59,7 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("Subscription Key")
 			.description("Azure Cognitive Services Subscription Key")
 			.defaultValue(subscription_key)
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
 			.required(true)
 			.build();
@@ -61,6 +68,7 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("Subscription Region")
 			.description("Azure Cognitive Services Subscription Region")
 			.defaultValue(subscription_region)
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
 			.required(true)
 			.build();	
@@ -70,6 +78,7 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("api-version")
 			.description("Version of the API requested by the client. Value must be 3.0.")
 			.defaultValue(api_version)
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
 			.allowableValues(api_version)
 			.required(true)
@@ -78,7 +87,8 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("Service Endpoint")
 			.description("Azure Cognitive Service Endpoint")
 			.defaultValue(endpoint)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+			.addValidator(StandardValidators.URL_VALIDATOR)
 			.required(true)
 			.build();
 	
@@ -89,6 +99,7 @@ public class AzureTranslate extends AbstractProcessor {
 					"The language is specified by providing a well-formed BCP 47 language tag. " + 
 					"For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  " +
 					"Language auto-detection will be applied if not specified.")
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_BLANK_VALIDATOR)
 			.required(false)
 			.build();
@@ -101,6 +112,7 @@ public class AzureTranslate extends AbstractProcessor {
 			"For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  " +
 			"For multiple translations separate output languages separated by commas.")
 			.defaultValue("en,es,it")
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
 			.required(true)
 			.build();
@@ -110,6 +122,7 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("inputText")
 			.description("The text to be translated.")
 			.defaultValue(default_input_text)
+			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
 			.required(true)
 			.build();
@@ -222,5 +235,13 @@ public class AzureTranslate extends AbstractProcessor {
         JsonElement json = parser.parse(json_text);
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         return gson.toJson(json);
+	}
+	@OnScheduled
+	public void onScheduled(final ProcessContext context) {
+		//
+	}
+	@OnStopped
+	public void destroyClient() {
+//		
 	}
 }
