@@ -1,6 +1,7 @@
 package org.apache.nifi.processors.translation.azure;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -21,6 +22,7 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
 
 import com.google.gson.Gson;
@@ -28,6 +30,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
+import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -49,6 +52,8 @@ public class AzureTranslate extends AbstractProcessor {
 	// Request Headers
 	private static String subscription_key = "****************";
 	private static String subscription_region = "eastus";
+//  private static String subscription_key = System.getenv("ACS_TRANSLATOR_TEXT_SUBSCRIPTION_KEY");
+//	private static String subscription_region = System.getenv("ACS_TRANSLATOR_TEXT_ENDPOINT");
 	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
 	private static String default_input_text = "Лучшее время, чтобы посадить дерево, было 20 лет назад. Следующее лучшее время – сегодня.";
 //	private static String default_input_text = "Привет, как ты сегодня?";
@@ -175,8 +180,11 @@ public class AzureTranslate extends AbstractProcessor {
 
 	@Override
 	public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
+//		Get or create a Flowfile if one does not exit
 		FlowFile flowFile = session.get();
-		
+		if(null == flowFile)
+			flowFile = session.create();
+//		Get values set in Processor
 		String sub_key = context.getProperty(SUBSCRIPTION_KEY).evaluateAttributeExpressions(flowFile).getValue();
 		String sub_region = context.getProperty(SUBSCRIPTION_REGION).evaluateAttributeExpressions(flowFile).getValue();
 		String api_version = context.getProperty(API_VERSION).evaluateAttributeExpressions(flowFile).getValue();
@@ -186,49 +194,65 @@ public class AzureTranslate extends AbstractProcessor {
 		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
 		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
 //		String input_text_json = "[{\n\t\"Text\": \"Welcome to Microsoft Translator. Guess how many languages I speak!\"\n}]";
+
 		
 	    OkHttpClient client = new OkHttpClient();
-	    MediaType mediaType = MediaType.parse("application/json");
-	    RequestBody body = RequestBody.create(mediaType, input_text_json);
+//	    MediaType mediaType = MediaType.parse("application/json");
+//	    RequestBody body = RequestBody.create(mediaType, input_text_json);
+	    RequestBody body = RequestBody.create(input_text_json, MediaType.get("application/json"));
 	    
 
-	    String url = endpoint + "/translate?";
+
 	    StringBuffer queryString = new StringBuffer();
+	    queryString.append("/translate?");
 	    queryString.append(API_VERSION.getName() + "=" + api_version + "&");
 	    queryString.append(toLanguage.getName() + "=" + to_language);
 	    if(null != from_language)
 	    	queryString.append("&" + fromLanguage.getName() + "=" + from_language);
-	    	
+
+	    String url = endpoint + queryString.toString();
 	    
 	    
 	    Request request = new Request.Builder()
-	    		.url(url + queryString.toString())
+	    		.url(url)
 	    		.post(body)
 	    		.addHeader("Ocp-Apim-Subscription-Key", sub_key)
 	    		.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 	    		.addHeader("Content-Type", "application/json")
 	    		.build();
-//	    this.getLogger().error(prettify(request.toString()));
-//	    this.getLogger().error(prettify(request.body().toString()));
 	    this.getLogger().error(request.toString());
 //	    this.getLogger().error("****: " + body.toString());
 
 	    
-	    Response response = null;
+	    final Response response;
 	    try {
 			response = client.newCall(request).execute();
+//			Headers headers = response.headers();
+//			this.getLogger().error(responseBody);
+//			headers.forEach(h -> this.getLogger().debug(h.getFirst() + ":" + h.getSecond()));
+
 			
-			this.getLogger().error(prettify(response.body().string()));
 			
-//			System.out.println(response.body().string());
+			String responseBody = prettify(response.body().string());
+			
+			this.getLogger().error(responseBody);
+
+	    
+			flowFile = session.write(flowFile, new OutputStreamCallback() {
+			
+			@Override
+			public void process(final OutputStream out) throws IOException {
+				out.write(responseBody.getBytes());
+			}
+		});
+	    
+	    session.transfer(flowFile, REL_SUCCESS);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			session.transfer(flowFile, REL_COMMS_FAILURE);
 			e.printStackTrace();
 		}
-	    finally {
-	    	response.close();
-	    }
-		
+
+
 	}
 	private static String prettify(String json_text) {
         JsonParser parser = new JsonParser();
