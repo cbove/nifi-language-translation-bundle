@@ -37,7 +37,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-@TriggerWhenEmpty
+//@TriggerWhenEmpty
 @InputRequirement(Requirement.INPUT_ALLOWED)
 public class AzureTranslate extends AbstractProcessor {
 	// Skipping all optional parameters for now
@@ -220,7 +220,7 @@ public class AzureTranslate extends AbstractProcessor {
 	    		.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 	    		.addHeader("Content-Type", "application/json")
 	    		.build();
-	    this.getLogger().error(request.toString());
+	    this.getLogger().debug(request.toString());
 //	    this.getLogger().error("****: " + body.toString());
 
 	    
@@ -235,7 +235,7 @@ public class AzureTranslate extends AbstractProcessor {
 			
 			String responseBody = prettify(response.body().string());
 			
-			this.getLogger().error(responseBody);
+			this.getLogger().debug(responseBody);
 
 	    
 			flowFile = session.write(flowFile, new OutputStreamCallback() {
