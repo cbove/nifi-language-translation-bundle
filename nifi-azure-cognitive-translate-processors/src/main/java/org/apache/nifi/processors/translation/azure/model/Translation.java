@@ -14,8 +14,8 @@ public class Translation {
 	 * Response:
 	 * [
 	 * {"detectedLanguage":
-	 * 	{"language":"fr","score":1.0},
-	 * 		"translations":
+	 * 		{"language":"fr","score":1.0},
+	 * 	"translations":
 	 * [
 	 * 		{"text":"Hello","to":"en"}]},
 	 * 
@@ -45,41 +45,10 @@ public class Translation {
 	 * ]
 	 */
 
-	private String fromLang;
-	private String[] toLang;
-	private String[] fromText;
-	private String[] toText;
-
-	String getFromLang() {
-		return fromLang;
-	}
-
-	void setFromLang(String fromLang) {
-		this.fromLang = fromLang;
-	}
-
-	String[] getToLang() {
-		return toLang;
-	}
-
-	void setToLang(String[] toLang) {
-		this.toLang = toLang;
-	}
-
-	String[] getFromText() {
-		return fromText;
-	}
-
-	void setFromText(String[] fromText) {
-		this.fromText = fromText;
-	}
-
-	String[] getToText() {
-		return toText;
-	}
-
-	void setToText(String[] toText) {
-		this.toText = toText;
-	}
+	private String detectedLanguage;
+	private float score;
+	private String to;
+	private String text;
+	
 
 }
