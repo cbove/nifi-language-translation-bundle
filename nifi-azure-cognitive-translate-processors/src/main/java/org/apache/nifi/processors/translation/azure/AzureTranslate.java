@@ -4,13 +4,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
-import org.apache.nifi.annotation.behavior.TriggerWhenEmpty;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -24,13 +25,14 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.processors.translation.azure.model.ResponseError;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -43,12 +45,12 @@ public class AzureTranslate extends AbstractProcessor {
 	// Skipping all optional parameters for now
 	// Request Parameters
 	final private static String api_version = "3.0";
-	
-    private List<PropertyDescriptor> descriptors;
-    private Set<Relationship> relationships;
-	
+
+	private List<PropertyDescriptor> descriptors;
+	private Set<Relationship> relationships;
+
 //	private Translation translation;
-	
+
 	// Request Headers
 	private static String subscription_key = "****************";
 	private static String subscription_region = "eastus";
@@ -59,80 +61,47 @@ public class AzureTranslate extends AbstractProcessor {
 //	private static String default_input_text = "Привет, как ты сегодня?";
 //	private String authorization_token;
 
-	
-	static final PropertyDescriptor SUBSCRIPTION_KEY = new PropertyDescriptor.Builder()
-			.name("Subscription Key")
-			.description("Azure Cognitive Services Subscription Key")
-			.defaultValue(subscription_key)
+	static final PropertyDescriptor SUBSCRIPTION_KEY = new PropertyDescriptor.Builder().name("Subscription Key")
+			.description("Azure Cognitive Services Subscription Key").defaultValue(subscription_key)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-			.required(true)
-			.build();
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
 
-	static final PropertyDescriptor SUBSCRIPTION_REGION = new PropertyDescriptor.Builder()
-			.name("Subscription Region")
-			.description("Azure Cognitive Services Subscription Region")
-			.defaultValue(subscription_region)
+	static final PropertyDescriptor SUBSCRIPTION_REGION = new PropertyDescriptor.Builder().name("Subscription Region")
+			.description("Azure Cognitive Services Subscription Region").defaultValue(subscription_region)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-			.required(true)
-			.build();	
-	
-	static final PropertyDescriptor API_VERSION = new PropertyDescriptor.Builder()
-			.displayName("API Version")
-			.name("api-version")
-			.description("Version of the API requested by the client. Value must be 3.0.")
-			.defaultValue(api_version)
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
+
+	static final PropertyDescriptor API_VERSION = new PropertyDescriptor.Builder().displayName("API Version")
+			.name("api-version").description("Version of the API requested by the client. Value must be 3.0.")
+			.defaultValue(api_version).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).allowableValues(api_version).required(true).build();
+	static final PropertyDescriptor ENDPOINT = new PropertyDescriptor.Builder().name("Service Endpoint")
+			.description("Azure Cognitive Service Endpoint").defaultValue(endpoint)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-			.allowableValues(api_version)
-			.required(true)
-			.build();
-	static final PropertyDescriptor ENDPOINT = new PropertyDescriptor.Builder()
-			.name("Service Endpoint")
-			.description("Azure Cognitive Service Endpoint")
-			.defaultValue(endpoint)
-			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.URL_VALIDATOR)
-			.required(true)
-			.build();
-	
-	static final PropertyDescriptor fromLanguage = new PropertyDescriptor.Builder()
-			.displayName("Input Language")
+			.addValidator(StandardValidators.URL_VALIDATOR).required(true).build();
+
+	static final PropertyDescriptor fromLanguage = new PropertyDescriptor.Builder().displayName("Input Language")
 			.name("from")
-			.description("The language of the text to be translated.  " + 
-					"The language is specified by providing a well-formed BCP 47 language tag. " + 
-					"For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  " +
-					"Language auto-detection will be applied if not specified.")
+			.description("The language of the text to be translated.  "
+					+ "The language is specified by providing a well-formed BCP 47 language tag. "
+					+ "For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  "
+					+ "Language auto-detection will be applied if not specified.")
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_BLANK_VALIDATOR)
-			.required(false)
-			.build();
+			.addValidator(StandardValidators.NON_BLANK_VALIDATOR).required(false).build();
 
-	static final PropertyDescriptor toLanguage = new PropertyDescriptor.Builder()
-			.displayName("Output Language(s)")
+	static final PropertyDescriptor toLanguage = new PropertyDescriptor.Builder().displayName("Output Language(s)")
 			.name("to")
-			.description("The language(s) into which the text will translated." +
-			"The language is specified by providing a well-formed BCP 47 language tag. " + 
-			"For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  " +
-			"For multiple translations separate output languages separated by commas.")
-			.defaultValue("en,es,it")
+			.description("The language(s) into which the text will translated."
+					+ "The language is specified by providing a well-formed BCP 47 language tag. "
+					+ "For instance, use the value `ru` to specify Russian or use the value `zh-Hant` to specify Chinese Traditional.  "
+					+ "For multiple translations separate output languages separated by commas.")
+			.defaultValue("en,es,it").expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
+
+	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder().displayName("Input Text")
+			.name("inputText").description("The text to be translated.").defaultValue(default_input_text)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-			.required(true)
-			.build();
-
-	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder()
-			.displayName("Input Text")
-			.name("inputText")
-			.description("The text to be translated.")
-			.defaultValue(default_input_text)
-			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
-			.required(true)
-			.build();
-
-
+			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
 
 	protected void init(final ProcessorInitializationContext context) {
 		final List<PropertyDescriptor> descriptors = new ArrayList<>();
@@ -144,36 +113,33 @@ public class AzureTranslate extends AbstractProcessor {
 		descriptors.add(toLanguage);
 		descriptors.add(inputText);
 		this.descriptors = Collections.unmodifiableList(descriptors);
-		
-		
+
 		final Set<Relationship> relationships = new HashSet<>();
 		relationships.add(REL_SUCCESS);
 		relationships.add(REL_COMMS_FAILURE);
 		relationships.add(REL_TRANSLATION_FAILED);
 		this.relationships = Collections.unmodifiableSet(relationships);
-		
+
 	}
-	public Set<Relationship> getRelationships(){
+
+	public Set<Relationship> getRelationships() {
 		return this.relationships;
 	}
-	public final List<PropertyDescriptor> getSupportedPropertyDescriptors(){
+
+	public final List<PropertyDescriptor> getSupportedPropertyDescriptors() {
 		return this.descriptors;
 	}
 
-    public static final Relationship REL_SUCCESS = new Relationship.Builder()
-            .name("success")
-            .description("This relationship is used when the translation is successful")
-            .build();
-    public static final Relationship REL_COMMS_FAILURE = new Relationship.Builder()
-            .name("comms.failure")
-            .description("This relationship is used when the translation fails due to a problem such as a network failure, and for which the translation should be attempted again")
-            .build();
-    public static final Relationship REL_TRANSLATION_FAILED = new Relationship.Builder()
-            .name("translation.failure")
-            .description("This relationship is used if the translation cannot be performed for some reason other than communications failure")
-            .build();
-	
-	
+	public static final Relationship REL_SUCCESS = new Relationship.Builder().name("success")
+			.description("This relationship is used when the translation is successful").build();
+	public static final Relationship REL_COMMS_FAILURE = new Relationship.Builder().name("comms.failure").description(
+			"This relationship is used when the translation fails due to a problem such as a network failure, and for which the translation should be attempted again")
+			.build();
+	public static final Relationship REL_TRANSLATION_FAILED = new Relationship.Builder().name("translation.failure")
+			.description(
+					"This relationship is used if the translation cannot be performed for some reason other than communications failure")
+			.build();
+
 	public AzureTranslate() {
 		// TODO Auto-generated constructor stub
 	}
@@ -182,7 +148,7 @@ public class AzureTranslate extends AbstractProcessor {
 	public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
 //		Get or create a Flowfile if one does not exit
 		FlowFile flowFile = session.get();
-		if(null == flowFile)
+		if (null == flowFile)
 			flowFile = session.create();
 //		Get values set in Processor
 		String sub_key = context.getProperty(SUBSCRIPTION_KEY).evaluateAttributeExpressions(flowFile).getValue();
@@ -195,75 +161,96 @@ public class AzureTranslate extends AbstractProcessor {
 		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
 //		String input_text_json = "[{\n\t\"Text\": \"Welcome to Microsoft Translator. Guess how many languages I speak!\"\n}]";
 
-		
-	    OkHttpClient client = new OkHttpClient();
-//	    MediaType mediaType = MediaType.parse("application/json");
-//	    RequestBody body = RequestBody.create(mediaType, input_text_json);
-	    RequestBody body = RequestBody.create(input_text_json, MediaType.get("application/json"));
-	    
+		OkHttpClient client = new OkHttpClient();
+		RequestBody body = RequestBody.create(input_text_json, MediaType.get("application/json"));
 
+//	    Build http query string 
+		StringBuffer queryString = new StringBuffer();
 
-	    StringBuffer queryString = new StringBuffer();
-	    queryString.append("/translate?");
-	    queryString.append(API_VERSION.getName() + "=" + api_version + "&");
-	    queryString.append(toLanguage.getName() + "=" + to_language);
-	    if(null != from_language)
-	    	queryString.append("&" + fromLanguage.getName() + "=" + from_language);
+		queryString.append("/translate?");
+		queryString.append(API_VERSION.getName() + "=" + api_version + "&");
+		queryString.append(toLanguage.getName() + "=" + to_language);
+		if (null != from_language)
+			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
 
-	    String url = endpoint + queryString.toString();
-	    
-	    
-	    Request request = new Request.Builder()
-	    		.url(url)
-	    		.post(body)
-	    		.addHeader("Ocp-Apim-Subscription-Key", sub_key)
-	    		.addHeader("Ocp-Apim-Subscription-Region", sub_region)
-	    		.addHeader("Content-Type", "application/json")
-	    		.build();
-	    this.getLogger().debug(request.toString());
-//	    this.getLogger().error("****: " + body.toString());
+//	    Build request object from endpoint and http query string
+		Request request = new Request.Builder().url(endpoint + queryString.toString()).post(body)
+				.addHeader("Ocp-Apim-Subscription-Key", sub_key).addHeader("Ocp-Apim-Subscription-Region", sub_region)
+				.addHeader("Content-Type", "application/json").build();
+		this.getLogger().debug(request.toString());
+		this.getLogger().debug("****: " + body.toString());
 
-	    
-	    final Response response;
-	    try {
+		final Response response;
+		try {
 			response = client.newCall(request).execute();
 //			Headers headers = response.headers();
 //			this.getLogger().error(responseBody);
 //			headers.forEach(h -> this.getLogger().debug(h.getFirst() + ":" + h.getSecond()));
 
-			
-			
 			String responseBody = prettify(response.body().string());
-			
-			this.getLogger().debug(responseBody);
+//			String responseBody = response.body().string();
+			this.getLogger()
+				.debug(
+					prettify(responseBody)
+				);
 
-	    
-			flowFile = session.write(flowFile, new OutputStreamCallback() {
-			
-			@Override
-			public void process(final OutputStream out) throws IOException {
-				out.write(responseBody.getBytes());
+//			Serialize response
+			Gson gson = new Gson();
+			JsonParser responseParser = new JsonParser();
+			JsonElement json = responseParser.parse(responseBody);
+
+			JsonObject jsonObject = json.getAsJsonObject();
+
+//			Check for error response
+//			If the json object contains an error element then put error code/message to flowFile attributes
+//			and transfer to REL_TRANSLATION_FAILED 
+			if (jsonObject.get("error") != null) {
+				Map<String, String> errorMap = new HashMap<String, String>();
+				errorMap.put("code", jsonObject.get("code").getAsString());
+
+				if (jsonObject.get("code") != null) {
+					errorMap.put("message", jsonObject.get("message").getAsString());
+				} else {
+					errorMap.put("message", "No message was returned");
+//					ResponseError responseError = gson.fromJson(jsonObject, ResponseError.class);
+				}
+				flowFile = session.putAllAttributes(flowFile, errorMap);
+				session.transfer(flowFile, REL_TRANSLATION_FAILED);
+				return;
+
 			}
-		});
-	    
-	    session.transfer(flowFile, REL_SUCCESS);
+
+
+			flowFile = session.write(flowFile, new OutputStreamCallback() {
+
+				@Override
+				public void process(final OutputStream out) throws IOException {
+					out.write(responseBody.getBytes());
+				}
+			});
+
+			session.transfer(flowFile, REL_SUCCESS);
 		} catch (IOException e) {
+
 			session.transfer(flowFile, REL_COMMS_FAILURE);
-			e.printStackTrace();
+			this.getLogger().error(e.getMessage());
+
 		}
 
+	}
 
-	}
 	private static String prettify(String json_text) {
-        JsonParser parser = new JsonParser();
-        JsonElement json = parser.parse(json_text);
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.toJson(json);
+		JsonParser parser = new JsonParser();
+		JsonElement json = parser.parse(json_text);
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		return gson.toJson(json);
 	}
+
 	@OnScheduled
 	public void onScheduled(final ProcessContext context) {
 		//
 	}
+
 	@OnStopped
 	public void destroyClient() {
 //		
