@@ -169,7 +169,7 @@ public class AzureTranslate extends AbstractProcessor {
 			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
 
 //	    Build request object from endpoint and http query string
-		Request request = new Request.Builder().url(endpoint + queryString.toString()).post(body)
+		Request request = new Request.Builder().url(end_point + queryString.toString()).post(body)
 				.addHeader("Ocp-Apim-Subscription-Key", sub_key).addHeader("Ocp-Apim-Subscription-Region", sub_region)
 				.addHeader("Content-Type", "application/json").build();
 		this.getLogger().debug(request.toString());
