@@ -39,13 +39,13 @@
                     <zIndex>0</zIndex>
                 </connections>
                 <connections>
-                    <id>7fa21ed0-574c-35a8-0000-000000000000</id>
+                    <id>27c5f5b0-a573-3aba-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
                     <backPressureObjectThreshold>10000</backPressureObjectThreshold>
                     <destination>
                         <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
-                        <id>f6558bd1-c32e-3276-0000-000000000000</id>
+                        <id>01924237-3ae7-30db-0000-000000000000</id>
                         <type>PROCESSOR</type>
                     </destination>
                     <flowFileExpiration>0 sec</flowFileExpiration>
@@ -55,12 +55,60 @@
                     <loadBalanceStatus>LOAD_BALANCE_NOT_CONFIGURED</loadBalanceStatus>
                     <loadBalanceStrategy>DO_NOT_LOAD_BALANCE</loadBalanceStrategy>
                     <name></name>
-                    <selectedRelationships>comms.failure</selectedRelationships>
                     <selectedRelationships>success</selectedRelationships>
-                    <selectedRelationships>translation.failure</selectedRelationships>
                     <source>
                         <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
-                        <id>9bfb476c-fe7a-3f28-0000-000000000000</id>
+                        <id>3be20fcd-ac78-3f27-0000-000000000000</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>2ef07c51-3f3f-3064-0000-000000000000</id>
+                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
+                        <id>3be20fcd-ac78-3f27-0000-000000000000</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <loadBalanceCompression>DO_NOT_COMPRESS</loadBalanceCompression>
+                    <loadBalancePartitionAttribute></loadBalancePartitionAttribute>
+                    <loadBalanceStatus>LOAD_BALANCE_NOT_CONFIGURED</loadBalanceStatus>
+                    <loadBalanceStrategy>DO_NOT_LOAD_BALANCE</loadBalanceStrategy>
+                    <name></name>
+                    <selectedRelationships>matched</selectedRelationships>
+                    <source>
+                        <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
+                        <id>1afdd76a-5032-3a9f-0000-000000000000</id>
+                        <type>PROCESSOR</type>
+                    </source>
+                    <zIndex>0</zIndex>
+                </connections>
+                <connections>
+                    <id>7419dc98-0994-30cf-0000-000000000000</id>
+                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
+                    <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+                    <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+                    <destination>
+                        <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
+                        <id>0a77f4cf-bd96-3411-0000-000000000000</id>
+                        <type>PROCESSOR</type>
+                    </destination>
+                    <flowFileExpiration>0 sec</flowFileExpiration>
+                    <labelIndex>1</labelIndex>
+                    <loadBalanceCompression>DO_NOT_COMPRESS</loadBalanceCompression>
+                    <loadBalancePartitionAttribute></loadBalancePartitionAttribute>
+                    <loadBalanceStatus>LOAD_BALANCE_NOT_CONFIGURED</loadBalanceStatus>
+                    <loadBalanceStrategy>DO_NOT_LOAD_BALANCE</loadBalanceStrategy>
+                    <name></name>
+                    <selectedRelationships>unmatched</selectedRelationships>
+                    <source>
+                        <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
+                        <id>1afdd76a-5032-3a9f-0000-000000000000</id>
                         <type>PROCESSOR</type>
                     </source>
                     <zIndex>0</zIndex>
@@ -91,13 +139,13 @@
                     <zIndex>0</zIndex>
                 </connections>
                 <connections>
-                    <id>eb61ec3f-2f62-31e6-0000-000000000000</id>
+                    <id>f5bfc0f8-246c-3de2-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
                     <backPressureObjectThreshold>10000</backPressureObjectThreshold>
                     <destination>
                         <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
-                        <id>9bfb476c-fe7a-3f28-0000-000000000000</id>
+                        <id>1984f424-fd80-3408-0000-000000000000</id>
                         <type>PROCESSOR</type>
                     </destination>
                     <flowFileExpiration>0 sec</flowFileExpiration>
@@ -107,20 +155,363 @@
                     <loadBalanceStatus>LOAD_BALANCE_NOT_CONFIGURED</loadBalanceStatus>
                     <loadBalanceStrategy>DO_NOT_LOAD_BALANCE</loadBalanceStrategy>
                     <name></name>
-                    <selectedRelationships>tweet</selectedRelationships>
+                    <selectedRelationships>comms.failure</selectedRelationships>
+                    <selectedRelationships>translation.failure</selectedRelationships>
                     <source>
                         <groupId>6015b0fa-b6c8-33a0-0000-000000000000</groupId>
-                        <id>1afdd76a-5032-3a9f-0000-000000000000</id>
+                        <id>3be20fcd-ac78-3f27-0000-000000000000</id>
                         <type>PROCESSOR</type>
                     </source>
                     <zIndex>0</zIndex>
                 </connections>
                 <processors>
+                    <id>01924237-3ae7-30db-0000-000000000000</id>
+                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
+                    <position>
+                        <x>-137.38011810718967</x>
+                        <y>645.0071329249474</y>
+                    </position>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.9.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+<key>Log Level</key>
+<value>
+    <name>Log Level</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>
+    <name>Log Payload</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+<value>
+    <name>Attributes to Log</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>
+    <name>attributes-to-log-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+<value>
+    <name>Attributes to Ignore</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+<value>
+    <name>attributes-to-ignore-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+<value>
+    <name>Log prefix</name>
+</value>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>
+    <name>character-set</name>
+</value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+<key>Log Level</key>
+<value>error</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>true</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>.*</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>UTF-8</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <executionNodeRestricted>false</executionNodeRestricted>
+                    <name>LogAttribute</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <state>STOPPED</state>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.LogAttribute</type>
+                </processors>
+                <processors>
+                    <id>0a77f4cf-bd96-3411-0000-000000000000</id>
+                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
+                    <position>
+                        <x>488.28349460885727</x>
+                        <y>163.3653342020824</y>
+                    </position>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.9.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+<key>Log Level</key>
+<value>
+    <name>Log Level</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>
+    <name>Log Payload</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+<value>
+    <name>Attributes to Log</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>
+    <name>attributes-to-log-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+<value>
+    <name>Attributes to Ignore</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+<value>
+    <name>attributes-to-ignore-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+<value>
+    <name>Log prefix</name>
+</value>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>
+    <name>character-set</name>
+</value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+<key>Log Level</key>
+<value>debug</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>true</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>.*</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>UTF-8</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <executionNodeRestricted>false</executionNodeRestricted>
+                    <name>LogAttribute</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <state>STOPPED</state>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.LogAttribute</type>
+                </processors>
+                <processors>
+                    <id>1984f424-fd80-3408-0000-000000000000</id>
+                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
+                    <position>
+                        <x>391.9120567176709</x>
+                        <y>592.7306384877743</y>
+                    </position>
+                    <bundle>
+                        <artifact>nifi-standard-nar</artifact>
+                        <group>org.apache.nifi</group>
+                        <version>1.9.2</version>
+                    </bundle>
+                    <config>
+                        <bulletinLevel>WARN</bulletinLevel>
+                        <comments></comments>
+                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+                        <descriptors>
+                            <entry>
+<key>Log Level</key>
+<value>
+    <name>Log Level</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>
+    <name>Log Payload</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+<value>
+    <name>Attributes to Log</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>
+    <name>attributes-to-log-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+<value>
+    <name>Attributes to Ignore</name>
+</value>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+<value>
+    <name>attributes-to-ignore-regex</name>
+</value>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+<value>
+    <name>Log prefix</name>
+</value>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>
+    <name>character-set</name>
+</value>
+                            </entry>
+                        </descriptors>
+                        <executionNode>ALL</executionNode>
+                        <lossTolerant>false</lossTolerant>
+                        <penaltyDuration>30 sec</penaltyDuration>
+                        <properties>
+                            <entry>
+<key>Log Level</key>
+<value>error</value>
+                            </entry>
+                            <entry>
+<key>Log Payload</key>
+<value>true</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Log</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-log-regex</key>
+<value>.*</value>
+                            </entry>
+                            <entry>
+<key>Attributes to Ignore</key>
+                            </entry>
+                            <entry>
+<key>attributes-to-ignore-regex</key>
+                            </entry>
+                            <entry>
+<key>Log prefix</key>
+                            </entry>
+                            <entry>
+<key>character-set</key>
+<value>UTF-8</value>
+                            </entry>
+                        </properties>
+                        <runDurationMillis>0</runDurationMillis>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
+                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+                        <yieldDuration>1 sec</yieldDuration>
+                    </config>
+                    <executionNodeRestricted>false</executionNodeRestricted>
+                    <name>LogAttribute</name>
+                    <relationships>
+                        <autoTerminate>true</autoTerminate>
+                        <name>success</name>
+                    </relationships>
+                    <state>STOPPED</state>
+                    <style/>
+                    <type>org.apache.nifi.processors.standard.LogAttribute</type>
+                </processors>
+                <processors>
                     <id>1afdd76a-5032-3a9f-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <position>
                         <x>-147.03346417507066</x>
-                        <y>137.30830090466384</y>
+                        <y>135.95412915173415</y>
                     </position>
                     <bundle>
                         <artifact>nifi-standard-nar</artifact>
@@ -139,6 +530,12 @@
 </value>
                             </entry>
                             <entry>
+<key>not_russian</key>
+<value>
+    <name>not_russian</name>
+</value>
+                            </entry>
+                            <entry>
 <key>tweet</key>
 <value>
     <name>tweet</name>
@@ -151,7 +548,11 @@
                         <properties>
                             <entry>
 <key>Routing Strategy</key>
-<value>Route to Property name</value>
+<value>Route to 'match' if all match</value>
+                            </entry>
+                            <entry>
+<key>not_russian</key>
+<value>${language:equals('ru')}</value>
                             </entry>
                             <entry>
 <key>tweet</key>
@@ -167,10 +568,10 @@
                     <name>Find only Tweets</name>
                     <relationships>
                         <autoTerminate>false</autoTerminate>
-                        <name>tweet</name>
+                        <name>matched</name>
                     </relationships>
                     <relationships>
-                        <autoTerminate>true</autoTerminate>
+                        <autoTerminate>false</autoTerminate>
                         <name>unmatched</name>
                     </relationships>
                     <state>STOPPED</state>
@@ -181,8 +582,8 @@
                     <id>1bfbb5bf-1f51-3625-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <position>
-                        <x>-176.9635604839773</x>
-                        <y>-317.0586593977391</y>
+                        <x>-148.52578582577416</x>
+                        <y>-322.475376927036</y>
                     </position>
                     <bundle>
                         <artifact>nifi-social-media-nar</artifact>
@@ -255,7 +656,7 @@
                         <properties>
                             <entry>
 <key>Twitter Endpoint</key>
-<value>Filter Endpoint</value>
+<value>Sample Endpoint</value>
                             </entry>
                             <entry>
 <key>Consumer Key</key>
@@ -271,7 +672,6 @@
                             </entry>
                             <entry>
 <key>Languages</key>
-<value>ru</value>
                             </entry>
                             <entry>
 <key>Terms to Filter On</key>
@@ -284,9 +684,9 @@
                             </entry>
                         </properties>
                         <runDurationMillis>0</runDurationMillis>
-                        <schedulingPeriod>1 sec</schedulingPeriod>
+                        <schedulingPeriod>0 sec</schedulingPeriod>
                         <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
-                        <yieldDuration>1 sec</yieldDuration>
+                        <yieldDuration>2 sec</yieldDuration>
                     </config>
                     <executionNodeRestricted>false</executionNodeRestricted>
                     <name>GetTwitter</name>
@@ -302,8 +702,8 @@
                     <id>1db4d386-6aff-31c4-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <position>
-                        <x>-157.24004299637932</x>
-                        <y>-91.06430582006897</y>
+                        <x>-146.40660793778557</x>
+                        <y>-93.7726645847174</y>
                     </position>
                     <bundle>
                         <artifact>nifi-standard-nar</artifact>
@@ -465,11 +865,11 @@
                     <type>org.apache.nifi.processors.standard.EvaluateJsonPath</type>
                 </processors>
                 <processors>
-                    <id>9bfb476c-fe7a-3f28-0000-000000000000</id>
+                    <id>3be20fcd-ac78-3f27-0000-000000000000</id>
                     <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
                     <position>
-                        <x>-138.4441399248268</x>
-                        <y>355.86754289300774</y>
+                        <x>-143.58252281654643</x>
+                        <y>380.9033297925323</y>
                     </position>
                     <bundle>
                         <artifact>nifi-azure-cognitive-translate-nar</artifact>
@@ -530,7 +930,6 @@
                         <properties>
                             <entry>
 <key>Subscription Key</key>
-<value>91268f3cc0554198a3ba8c4ac31967df</value>
                             </entry>
                             <entry>
 <key>Subscription Region</key>
@@ -546,6 +945,7 @@
                             </entry>
                             <entry>
 <key>from</key>
+<value>${language}</value>
                             </entry>
                             <entry>
 <key>to</key>
@@ -579,124 +979,10 @@
                     <style/>
                     <type>org.apache.nifi.processors.translation.azure.AzureTranslate</type>
                 </processors>
-                <processors>
-                    <id>f6558bd1-c32e-3276-0000-000000000000</id>
-                    <parentGroupId>6015b0fa-b6c8-33a0-0000-000000000000</parentGroupId>
-                    <position>
-                        <x>-127.80180168151855</x>
-                        <y>601.3458099365234</y>
-                    </position>
-                    <bundle>
-                        <artifact>nifi-standard-nar</artifact>
-                        <group>org.apache.nifi</group>
-                        <version>1.9.2</version>
-                    </bundle>
-                    <config>
-                        <bulletinLevel>WARN</bulletinLevel>
-                        <comments></comments>
-                        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
-                        <descriptors>
-                            <entry>
-<key>Log Level</key>
-<value>
-    <name>Log Level</name>
-</value>
-                            </entry>
-                            <entry>
-<key>Log Payload</key>
-<value>
-    <name>Log Payload</name>
-</value>
-                            </entry>
-                            <entry>
-<key>Attributes to Log</key>
-<value>
-    <name>Attributes to Log</name>
-</value>
-                            </entry>
-                            <entry>
-<key>attributes-to-log-regex</key>
-<value>
-    <name>attributes-to-log-regex</name>
-</value>
-                            </entry>
-                            <entry>
-<key>Attributes to Ignore</key>
-<value>
-    <name>Attributes to Ignore</name>
-</value>
-                            </entry>
-                            <entry>
-<key>attributes-to-ignore-regex</key>
-<value>
-    <name>attributes-to-ignore-regex</name>
-</value>
-                            </entry>
-                            <entry>
-<key>Log prefix</key>
-<value>
-    <name>Log prefix</name>
-</value>
-                            </entry>
-                            <entry>
-<key>character-set</key>
-<value>
-    <name>character-set</name>
-</value>
-                            </entry>
-                        </descriptors>
-                        <executionNode>ALL</executionNode>
-                        <lossTolerant>false</lossTolerant>
-                        <penaltyDuration>30 sec</penaltyDuration>
-                        <properties>
-                            <entry>
-<key>Log Level</key>
-<value>error</value>
-                            </entry>
-                            <entry>
-<key>Log Payload</key>
-<value>true</value>
-                            </entry>
-                            <entry>
-<key>Attributes to Log</key>
-                            </entry>
-                            <entry>
-<key>attributes-to-log-regex</key>
-<value>.*</value>
-                            </entry>
-                            <entry>
-<key>Attributes to Ignore</key>
-                            </entry>
-                            <entry>
-<key>attributes-to-ignore-regex</key>
-                            </entry>
-                            <entry>
-<key>Log prefix</key>
-                            </entry>
-                            <entry>
-<key>character-set</key>
-<value>UTF-8</value>
-                            </entry>
-                        </properties>
-                        <runDurationMillis>0</runDurationMillis>
-                        <schedulingPeriod>0 sec</schedulingPeriod>
-                        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
-                        <yieldDuration>1 sec</yieldDuration>
-                    </config>
-                    <executionNodeRestricted>false</executionNodeRestricted>
-                    <name>LogAttribute</name>
-                    <relationships>
-                        <autoTerminate>true</autoTerminate>
-                        <name>success</name>
-                    </relationships>
-                    <state>STOPPED</state>
-                    <style/>
-                    <type>org.apache.nifi.processors.standard.LogAttribute</type>
-                </processors>
             </contents>
             <name>AzureTranslate_TwitterTest</name>
             <variables/>
         </processGroups>
     </snippet>
-    <timestamp>10/01/2019 10:22:58 EDT</timestamp>
+    <timestamp>10/03/2019 22:28:48 EDT</timestamp>
 </template>
