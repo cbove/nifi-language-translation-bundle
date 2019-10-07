@@ -154,6 +154,7 @@ public class AzureTranslate extends AbstractProcessor {
 		String to_language = context.getProperty(toLanguage).evaluateAttributeExpressions(flowFile).getValue();
 		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
 
+		
 		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
 
 //	    Step 3.
@@ -164,15 +165,20 @@ public class AzureTranslate extends AbstractProcessor {
 
 		queryString.append("/translate?");
 		queryString.append(API_VERSION.getName() + "=" + api_version + "&");
+
+//		Strip white space from to_language
+		to_language  = to_language.replaceAll("\\s+", "");
 		queryString.append(toLanguage.getName() + "=" + to_language);
+		
 		if (null != from_language)
 			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
 
 //	    Build request object from endpoint and http query string
 		Request request = new Request.Builder().url(end_point + queryString.toString()).post(body)
-				.addHeader("Ocp-Apim-Subscription-Key", sub_key).addHeader("Ocp-Apim-Subscription-Region", sub_region)
+				.addHeader("Ocp-Apim-Subscription-Key", sub_key)
+				.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 				.addHeader("Content-Type", "application/json").build();
-		this.getLogger().debug(request.toString());
+		this.getLogger().debug("****: " + request.toString());
 		this.getLogger().debug("****: " + body.toString());
 
 		final Response response;
