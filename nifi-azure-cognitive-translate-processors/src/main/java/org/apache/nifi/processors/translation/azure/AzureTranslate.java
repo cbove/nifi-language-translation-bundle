@@ -85,7 +85,7 @@ public class AzureTranslate extends AbstractProcessor {
 	static final PropertyDescriptor SERVICE_ENDPOINT = new PropertyDescriptor.Builder().name("Service Endpoint")
 			.description("Azure Cognitive Service Endpoint").defaultValue(service_endpoint)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.URL_VALIDATOR).required(true).build();
+			.addValidator(StandardValidators.NON_BLANK_VALIDATOR).required(true).build();
 	
 	static final PropertyDescriptor CHARACTER_SET = new PropertyDescriptor.Builder().displayName("Character Set")
 			.name("character_set")
@@ -110,9 +110,14 @@ public class AzureTranslate extends AbstractProcessor {
 					+ "For multiple translations separate output languages separated by commas.")
 			.defaultValue("en").expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
-	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder().displayName("Input Text")
-			.name("inputText").description("The text to be translated.").defaultValue(default_input_text)
+	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder()
+			.displayName("Input Text")
+			.name("inputText")
+			.description("The text to be translated.")
+			.defaultValue(default_input_text)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+			.addValidator(StandardValidators.ATTRIBUTE_EXPRESSION_LANGUAGE_VALIDATOR)
+			.required(false)
 //			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).
 			.build();
 
@@ -199,7 +204,9 @@ public class AzureTranslate extends AbstractProcessor {
 			translationText.addProperty("Text", content);
 			translationTextList.add(translationText);
 		}
-		String json = translationTextList.getAsString();
+		String json = translationTextList.toString();
+		
+		this.getLogger().error("^^^^^^^^^^^^^^^^^^^^: " + json + " :^^^^^^^^^^^^^^^^^^^^");
 		return RequestBody.create(json, MediaType.get("application/json"));
 		
 	}
@@ -225,40 +232,50 @@ public class AzureTranslate extends AbstractProcessor {
 
 		
 //		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
-		RequestBody body = buildRequest(context, session);
-//		if(translate_content) {
-//			byte[] buff = new byte[(int) flowFile.getSize()];
-//			session.read(flowFile, new InputStreamCallback() {
-//				@Override
-//				public void process(final InputStream in) throws IOException {
-//					StreamUtils.fillBuffer(in, buff);
-//				}
-//			});
-//			
-//			if(null != input_text) {
-//				byte[] inputBytes = input_text.getBytes();
-//				byte[] combinedContentInput = new byte[buff.length + inputBytes.length];
-//				System.arraycopy(inputBytes,  0, combinedContentInput, 0, inputBytes.length);
-//				System.arraycopy(buff, 0, combinedContentInput, inputBytes.length, buff.length);
-//				
-//			}
-//			
-//			body = RequestBody.create(buff, MediaType.get("application/json"));
-//
-//		}
-//		else {
-//			body = RequestBody.create(input_text_json, MediaType.get("application/json"));
-//		}
-//		Request requestX = new Request.Builder()
-//				.url(endpoint)
-//				.
-//		Strip white space from to_language
-//		to_language = to_language.replaceAll("\\s+", "");
+//		RequestBody body = buildRequest(context, session);
+////////////////////////////////
+		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
+		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
+		boolean translate_content = context.getProperty(translateContent).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
+		
+		
+		JsonArray translationTextList = new JsonArray();
 
-		 
+//		There may be 2 inputs:
+//			* input_text Attribute AND/OR
+//			* flowFile content and/or input_text Attribute.		
+		if(null != input_text && "" != input_text) {
+			JsonObject translationText = new JsonObject();
+			translationText.addProperty("Text", input_text);
+			translationTextList.add(translationText);
+		}
+		
+		if(translate_content) {
+			byte[] buff = new byte[(int) flowFile.getSize()];
+			session.read(flowFile, new InputStreamCallback() {
+				@Override
+				public void process(final InputStream in) throws IOException {
+					StreamUtils.fillBuffer(in, buff);
+				}
+			});
+			JsonObject translationText = new JsonObject();
+			String content = new String(buff, Charset.forName(encoding));
+			translationText.addProperty("Text", content);
+			translationTextList.add(translationText);
+		}
+		String json = translationTextList.toString();
+		
+		this.getLogger().error("\n^^^^^^^^^^^^^^^^^^^^: " + json + " :^^^^^^^^^^^^^^^^^^^^");
+		RequestBody body = RequestBody.create(json, MediaType.get("application/json"));		
+////////////////////////////////
+		
+		
+		
+		
 		HttpUrl.Builder builder = new HttpUrl.Builder();
 		builder
-			.addPathSegment(service_endpoint)
+			.scheme("https")
+			.host(service_endpoint)
 			.addPathSegment("/translate")
 			.addQueryParameter(API_VERSION.getName(), api_version)
 			.addQueryParameter(toLanguage.getName(), to_language);
@@ -266,33 +283,15 @@ public class AzureTranslate extends AbstractProcessor {
 			builder.addQueryParameter(fromLanguage.getName(), from_language);
 		
 		HttpUrl httpUrl = builder.build();
-		
-//				
-//				
-//				
-//				
-//				
-//		StringBuffer queryString = new StringBuffer();
-//
-//		queryString.append("/translate?");
-//		queryString.append(API_VERSION.getName() + "=" + api_version + "&");
-//
-////		Strip white space from to_language
-//		to_language  = to_language.replaceAll("\\s+", "");
-//		queryString.append(toLanguage.getName() + "=" + to_language);
-//		
-//		if (null != from_language)
-//			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
 
-//	    Build request object from endpoint and http query string
-//		Request request = new Request.Builder().url(end_point + queryString.toString())
-		Request request = new Request.Builder().url(httpUrl)
+		Request request = new Request.Builder()
+				.url(httpUrl)
 				.post(body)
 				.addHeader("Ocp-Apim-Subscription-Key", sub_key)
 				.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 				.addHeader("Content-Type", "application/json").build();
-		this.getLogger().debug("****: " + request.toString());
-		this.getLogger().debug("****: " + body.toString());
+		this.getLogger().error("\n=========================================>: " + request.toString());
+//		this.getLogger().error("****: " + body.toString());
 
 		final Response response;
 		Map<String, String> errorMap = new HashMap<String, String>();
@@ -303,7 +302,7 @@ public class AzureTranslate extends AbstractProcessor {
 			String responseBody = prettify(response.body().string());
 //			String responseBody = response.body().string();
 			this.getLogger()
-				.debug(responseBody);
+				.error("RESPONSE_BODY: " + responseBody + "\nSTATUS_CODE: " + response.code());
 
 			int status_code = response.code();
 			if(status_code == 200) {// Happy path
@@ -313,14 +312,14 @@ public class AzureTranslate extends AbstractProcessor {
 					}
 				});
 				session.transfer(flowFile, REL_SUCCESS);
-//				return;
+				return;
 			}
 			else {// Bad request
 				errorMap.put("http-response-code", String.valueOf(status_code));
 
 				JsonParser responseParser = new JsonParser();
-				JsonElement json = responseParser.parse(responseBody);
-				JsonObject jsonObject = json.getAsJsonObject();
+				JsonElement jsonElement = responseParser.parse(responseBody);
+				JsonObject jsonObject = jsonElement.getAsJsonObject();
 
 				try {
 					JsonObject error = jsonObject.get("error").getAsJsonObject();
@@ -353,7 +352,7 @@ public class AzureTranslate extends AbstractProcessor {
 			}
 
 		} catch (IOException e) {
-			errorMap.put("IOException", e.getMessage());
+			errorMap.put("Exception", e.getMessage());
 			session.transfer(flowFile, REL_COMMS_FAILURE);
 			this.getLogger().error(e.getMessage());
 		}
