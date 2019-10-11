@@ -1,7 +1,9 @@
 package org.apache.nifi.processors.translation.azure;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,15 +25,19 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.ProcessorInitializationContext;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.exception.ProcessException;
+import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.apache.nifi.processor.util.StandardValidators;
+import org.apache.nifi.stream.io.StreamUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -53,10 +59,11 @@ public class AzureTranslate extends AbstractProcessor {
 
 	// Request Headers
 //	private static String subscription_key = "****************";
-	private static String subscription_region = "eastus";
-  private static String subscription_key = System.getenv("ACS_TRANSLATOR_TEXT_SUBSCRIPTION_KEY");
-//	private static String subscription_region = System.getenv("ACS_TRANSLATOR_TEXT_ENDPOINT");
-	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
+	private static String subscription_region = System.getenv("ACS_TRANSLATOR_TEXT_SUBCRIPTION_REGION");
+	private static String subscription_key = System.getenv("ACS_TRANSLATOR_TEXT_SUBSCRIPTION_KEY");
+	private static String service_endpoint = System.getenv("ACS_TRANSLATOR_TEXT_ENDPOINT");
+	private static String character_set = "UTF-8";
+//	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
 	private static String default_input_text = "Лучшее время, чтобы посадить дерево, было 20 лет назад. Следующее лучшее время – сегодня.";
 //	private static String default_input_text = "Привет, как ты сегодня?";
 //	private String authorization_token;
@@ -70,14 +77,23 @@ public class AzureTranslate extends AbstractProcessor {
 			.description("Azure Cognitive Services Subscription Region").defaultValue(subscription_region)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
+
 	static final PropertyDescriptor API_VERSION = new PropertyDescriptor.Builder().displayName("API Version")
 			.name("api-version").description("Version of the API requested by the client. Value must be 3.0.")
 			.defaultValue(api_version).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).allowableValues(api_version).required(true).build();
-	static final PropertyDescriptor ENDPOINT = new PropertyDescriptor.Builder().name("Service Endpoint")
-			.description("Azure Cognitive Service Endpoint").defaultValue(endpoint)
+	static final PropertyDescriptor SERVICE_ENDPOINT = new PropertyDescriptor.Builder().name("Service Endpoint")
+			.description("Azure Cognitive Service Endpoint").defaultValue(service_endpoint)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.URL_VALIDATOR).required(true).build();
+	
+	static final PropertyDescriptor CHARACTER_SET = new PropertyDescriptor.Builder().displayName("Character Set")
+			.name("character_set")
+			.description("Specifies the character set of the data to be translated")
+			.required(true)
+			.defaultValue(character_set).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+			.addValidator(StandardValidators.CHARACTER_SET_VALIDATOR).build();
+
 	static final PropertyDescriptor fromLanguage = new PropertyDescriptor.Builder().displayName("Input Language")
 			.name("from")
 			.description("The language of the text to be translated.  "
@@ -97,8 +113,21 @@ public class AzureTranslate extends AbstractProcessor {
 	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder().displayName("Input Text")
 			.name("inputText").description("The text to be translated.").defaultValue(default_input_text)
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
+//			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).
+			.build();
 
+	
+	public static final PropertyDescriptor translateContent = new PropertyDescriptor.Builder()
+			.name("translateContent")
+			.displayName("Translate Content")
+			.description(
+					"Specifies whether or not the FlowFile content should be translated. If false, only the text specified by \"Input Text\" property will be translated.")
+			.required(true).allowableValues("true", "false")
+			.defaultValue("false").build();
+
+	
+	
+	
 	public Set<Relationship> getRelationships() {
 		return this.relationships;
 	}
@@ -122,10 +151,12 @@ public class AzureTranslate extends AbstractProcessor {
 		descriptors.add(SUBSCRIPTION_KEY);
 		descriptors.add(SUBSCRIPTION_REGION);
 		descriptors.add(API_VERSION);
-		descriptors.add(ENDPOINT);
+		descriptors.add(SERVICE_ENDPOINT);
+		descriptors.add(CHARACTER_SET);
 		descriptors.add(fromLanguage);
 		descriptors.add(toLanguage);
 		descriptors.add(inputText);
+		descriptors.add(translateContent);
 		this.descriptors = Collections.unmodifiableList(descriptors);
 
 		final Set<Relationship> relationships = new HashSet<>();
@@ -135,46 +166,128 @@ public class AzureTranslate extends AbstractProcessor {
 		this.relationships = Collections.unmodifiableSet(relationships);
 	}
 
+	
+	private RequestBody buildRequest(ProcessContext context, ProcessSession session) {
+		FlowFile flowFile = session.get();
 
+		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
+		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
+		boolean translate_content = context.getProperty(translateContent).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
+		
+		
+		JsonArray translationTextList = new JsonArray();
+
+//		There may be 2 inputs:
+//			* input_text Attribute AND/OR
+//			* flowFile content and/or input_text Attribute.		
+		if(null != input_text && "" != input_text) {
+			JsonObject translationText = new JsonObject();
+			translationText.addProperty("Text", input_text);
+			translationTextList.add(translationText);
+		}
+		
+		if(translate_content) {
+			byte[] buff = new byte[(int) flowFile.getSize()];
+			session.read(flowFile, new InputStreamCallback() {
+				@Override
+				public void process(final InputStream in) throws IOException {
+					StreamUtils.fillBuffer(in, buff);
+				}
+			});
+			JsonObject translationText = new JsonObject();
+			String content = new String(buff, Charset.forName(encoding));
+			translationText.addProperty("Text", content);
+			translationTextList.add(translationText);
+		}
+		String json = translationTextList.getAsString();
+		return RequestBody.create(json, MediaType.get("application/json"));
+		
+	}
+	
+	
+
+	
+	
+	
 	@Override
 	public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
-//		Step 1.
-//		Get or create a Flowfile if one does not exit
+
 		FlowFile flowFile = session.get();
 		if (null == flowFile)
 			flowFile = session.create();
-		
-//		Step 2.
-//		Get values set in Processor
 		String sub_key = context.getProperty(SUBSCRIPTION_KEY).evaluateAttributeExpressions(flowFile).getValue();
 		String sub_region = context.getProperty(SUBSCRIPTION_REGION).evaluateAttributeExpressions(flowFile).getValue();
 		String api_version = context.getProperty(API_VERSION).evaluateAttributeExpressions(flowFile).getValue();
-		String end_point = context.getProperty(ENDPOINT).evaluateAttributeExpressions(flowFile).getValue();
+		String service_endpoint = context.getProperty(SERVICE_ENDPOINT).evaluateAttributeExpressions(flowFile).getValue();
 		String from_language = context.getProperty(fromLanguage).evaluateAttributeExpressions(flowFile).getValue();
 		String to_language = context.getProperty(toLanguage).evaluateAttributeExpressions(flowFile).getValue();
-		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
+
 
 		
-		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
-
-//	    Step 3.
-//		Build the Request object
-//		Build http query string 
-		RequestBody body = RequestBody.create(input_text_json, MediaType.get("application/json"));
-		StringBuffer queryString = new StringBuffer();
-
-		queryString.append("/translate?");
-		queryString.append(API_VERSION.getName() + "=" + api_version + "&");
-
+//		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
+		RequestBody body = buildRequest(context, session);
+//		if(translate_content) {
+//			byte[] buff = new byte[(int) flowFile.getSize()];
+//			session.read(flowFile, new InputStreamCallback() {
+//				@Override
+//				public void process(final InputStream in) throws IOException {
+//					StreamUtils.fillBuffer(in, buff);
+//				}
+//			});
+//			
+//			if(null != input_text) {
+//				byte[] inputBytes = input_text.getBytes();
+//				byte[] combinedContentInput = new byte[buff.length + inputBytes.length];
+//				System.arraycopy(inputBytes,  0, combinedContentInput, 0, inputBytes.length);
+//				System.arraycopy(buff, 0, combinedContentInput, inputBytes.length, buff.length);
+//				
+//			}
+//			
+//			body = RequestBody.create(buff, MediaType.get("application/json"));
+//
+//		}
+//		else {
+//			body = RequestBody.create(input_text_json, MediaType.get("application/json"));
+//		}
+//		Request requestX = new Request.Builder()
+//				.url(endpoint)
+//				.
 //		Strip white space from to_language
-		to_language  = to_language.replaceAll("\\s+", "");
-		queryString.append(toLanguage.getName() + "=" + to_language);
-		
+//		to_language = to_language.replaceAll("\\s+", "");
+
+		 
+		HttpUrl.Builder builder = new HttpUrl.Builder();
+		builder
+			.addPathSegment(service_endpoint)
+			.addPathSegment("/translate")
+			.addQueryParameter(API_VERSION.getName(), api_version)
+			.addQueryParameter(toLanguage.getName(), to_language);
 		if (null != from_language)
-			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
+			builder.addQueryParameter(fromLanguage.getName(), from_language);
+		
+		HttpUrl httpUrl = builder.build();
+		
+//				
+//				
+//				
+//				
+//				
+//		StringBuffer queryString = new StringBuffer();
+//
+//		queryString.append("/translate?");
+//		queryString.append(API_VERSION.getName() + "=" + api_version + "&");
+//
+////		Strip white space from to_language
+//		to_language  = to_language.replaceAll("\\s+", "");
+//		queryString.append(toLanguage.getName() + "=" + to_language);
+//		
+//		if (null != from_language)
+//			queryString.append("&" + fromLanguage.getName() + "=" + from_language);
 
 //	    Build request object from endpoint and http query string
-		Request request = new Request.Builder().url(end_point + queryString.toString()).post(body)
+//		Request request = new Request.Builder().url(end_point + queryString.toString())
+		Request request = new Request.Builder().url(httpUrl)
+				.post(body)
 				.addHeader("Ocp-Apim-Subscription-Key", sub_key)
 				.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 				.addHeader("Content-Type", "application/json").build();
