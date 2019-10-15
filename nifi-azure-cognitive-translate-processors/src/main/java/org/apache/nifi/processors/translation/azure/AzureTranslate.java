@@ -14,6 +14,10 @@ import java.util.Set;
 
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.InputRequirement.Requirement;
+import org.apache.nifi.annotation.behavior.WritesAttribute;
+import org.apache.nifi.annotation.behavior.WritesAttributes;
+import org.apache.nifi.annotation.documentation.CapabilityDescription;
+import org.apache.nifi.annotation.documentation.Tags;
 import org.apache.nifi.annotation.lifecycle.OnScheduled;
 import org.apache.nifi.annotation.lifecycle.OnStopped;
 import org.apache.nifi.components.PropertyDescriptor;
@@ -45,10 +49,16 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 //@TriggerWhenEmpty
+//@SupportsBatching 
 @InputRequirement(Requirement.INPUT_ALLOWED)
+@Tags({"translate", "translation", "azure", "language", "azure cognitive services"})
+@CapabilityDescription("Translates content and/or \"Input Text\"(input-text-attribute) attribute from any supported(https://docs.microsoft.com/en-us/azure/cognitive-services/translator/reference/v3-0-languages) language to any other supported language.  ")
+@WritesAttributes({
+	@WritesAttribute(attribute="acs-error-code", description="If an error occurs, the request will also return a JSON error response. The error code is a 6-digit number combining the 3-digit HTTP status code followed by a 3-digit number to further categorize the error."),
+	@WritesAttribute(attribute="acs-error-message", description="Description of error condition.")}
+)
 public class AzureTranslate extends AbstractProcessor {
-	// Skipping all optional parameters for now
-	// Request Parameters
+	// Omitting all optional parameters due to no requirement to include
 	final private static String api_version = "3.0";
 	
 	private OkHttpClient client;
@@ -56,9 +66,12 @@ public class AzureTranslate extends AbstractProcessor {
 	private List<PropertyDescriptor> descriptors;
 	private Set<Relationship> relationships;
 
+	final private static String acs_error_code = "acs-error-code";
+	final private static String acs_error_message = "acs-error-message";
 
 	// Request Headers
 //	private static String subscription_key = "****************";
+	private static String protocol = "https";
 	private static String subscription_region = System.getenv("ACS_TRANSLATOR_TEXT_SUBCRIPTION_REGION");
 	private static String subscription_key = System.getenv("ACS_TRANSLATOR_TEXT_SUBSCRIPTION_KEY");
 	private static String service_endpoint = System.getenv("ACS_TRANSLATOR_TEXT_ENDPOINT");
@@ -150,7 +163,8 @@ public class AzureTranslate extends AbstractProcessor {
 //			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).
 			.build();
 
-//	This is may be confusing, should FlowFile content be a separate Processor to avoid confusion?
+//	I think it is confusing to have both, should FlowFile content be a separate Processor to avoid confusion?
+//	Could inputText Property be disabled when translateContent is set to TRUE?
 //	This requires the FlowFile content to be purely the object of the translation
 	public static final PropertyDescriptor translateContent = new PropertyDescriptor.Builder()
 			.displayName("Translate Content")
@@ -159,8 +173,6 @@ public class AzureTranslate extends AbstractProcessor {
 					"Specifies whether or not the FlowFile content should be translated. If false, only the text specified by \"Input Text\" property will be translated.")
 			.required(true).allowableValues("true", "false")
 			.defaultValue("false").build();
-
-	
 	
 	
 	public Set<Relationship> getRelationships() {
@@ -174,12 +186,12 @@ public class AzureTranslate extends AbstractProcessor {
 			.name("success")
 			.description("This relationship is used when the translation is successful").build();
 	public static final Relationship REL_COMMS_FAILURE = new Relationship.Builder()
-			.name("comms.failure").description(
+			.name("comms_failure").description(
 			"This relationship is used when the translation fails due to a problem such as a network failure, "
 			+ "and for which the translation should be attempted again")
 			.build();
 	public static final Relationship REL_TRANSLATION_FAILED = new Relationship.Builder().
-			name("translation.failure")
+			name("translation_failure")
 			.description(
 					"This relationship is used if the translation cannot be performed for some reason other than communications failure.  Most likely a malformed request.")
 			.build();
@@ -204,47 +216,7 @@ public class AzureTranslate extends AbstractProcessor {
 		this.relationships = Collections.unmodifiableSet(relationships);
 	}
 
-/** This caused FlowFile issues for some reason so I had to move the body of this function back to onTrigger	
-	private RequestBody buildRequest(ProcessContext context, ProcessSession session) {
-		FlowFile flowFile = session.get();
-
-		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
-		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
-		boolean translate_content = context.getProperty(translateContent).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
-		
-		
-		JsonArray translationTextList = new JsonArray();
-
-//		There may be 2 inputs:
-//			* input_text Attribute AND/OR
-//			* flowFile content and/or input_text Attribute.		
-		if(null != input_text && "" != input_text) {
-			JsonObject translationText = new JsonObject();
-			translationText.addProperty("Text", input_text);
-			translationTextList.add(translationText);
-		}
-		
-		if(translate_content) {
-			byte[] buff = new byte[(int) flowFile.getSize()];
-			session.read(flowFile, new InputStreamCallback() {
-				@Override
-				public void process(final InputStream in) throws IOException {
-					StreamUtils.fillBuffer(in, buff);
-				}
-			});
-			JsonObject translationText = new JsonObject();
-			String content = new String(buff, Charset.forName(encoding));
-			translationText.addProperty("Text", content);
-			translationTextList.add(translationText);
-		}
-		String json = translationTextList.toString();
-		
-		this.getLogger().debug("^^^^^^^^^^^^^^^^^^^^: " + json + " :^^^^^^^^^^^^^^^^^^^^");
-		return RequestBody.create(json, MediaType.get("application/json"));
-		
-	}
-	
-*/ 	
+ 	
 
 	
 	@Override
@@ -260,11 +232,6 @@ public class AzureTranslate extends AbstractProcessor {
 		String from_language = context.getProperty(fromLanguage).evaluateAttributeExpressions(flowFile).getValue();
 		String to_language = context.getProperty(toLanguage).evaluateAttributeExpressions(flowFile).getValue();
 
-
-		
-//		String input_text_json = "[{\n\t\"Text\": \"" + input_text + "\"\n}]";
-//		RequestBody body = buildRequest(context, session);
-////////////////////////////////
 		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
 		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
 		boolean translate_content = context.getProperty(translateContent).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
@@ -298,12 +265,11 @@ public class AzureTranslate extends AbstractProcessor {
 		
 		this.getLogger().debug("\n^^^^^^^^^^^^^^^^^^^^: " + json + " :^^^^^^^^^^^^^^^^^^^^");
 		RequestBody body = RequestBody.create(json, MediaType.get("application/json"));		
-////////////////////////////////
 		
 		
 		HttpUrl.Builder builder = new HttpUrl.Builder();
 		builder
-			.scheme("https")
+			.scheme(protocol)
 			.host(service_endpoint)
 			.addPathSegment("/translate")
 			.addQueryParameter(API_VERSION.getName(), api_version)
@@ -320,7 +286,6 @@ public class AzureTranslate extends AbstractProcessor {
 				.addHeader("Ocp-Apim-Subscription-Region", sub_region)
 				.addHeader("Content-Type", "application/json").build();
 		this.getLogger().debug("\n=========================================>: " + request.toString());
-//		this.getLogger().debug("****: " + body.toString());
 
 		final Response response;
 		Map<String, String> errorMap = new HashMap<String, String>();
@@ -328,10 +293,10 @@ public class AzureTranslate extends AbstractProcessor {
 		try {
 			response = client.newCall(request).execute();
 
-//			String responseBody = prettify(response.body().string());
-			String responseBody = response.body().string();
+			String responseBody = prettify(response.body().string());
+//			String responseBody = response.body().string();
 			this.getLogger()
-				.error("RESPONSE_BODY: " + responseBody + "\nSTATUS_CODE: " + response.code());
+				.debug("RESPONSE_BODY: " + responseBody + "\nSTATUS_CODE: " + response.code());
 
 			int status_code = response.code();
 			if(status_code == 200) {// Happy path
@@ -344,7 +309,7 @@ public class AzureTranslate extends AbstractProcessor {
 				return;
 			}
 			else {// Bad request
-				errorMap.put("http-response-code", String.valueOf(status_code));
+				errorMap.put("acs-http-response-code", String.valueOf(status_code));
 
 				JsonParser responseParser = new JsonParser();
 				JsonElement jsonElement = responseParser.parse(responseBody);
@@ -354,13 +319,13 @@ public class AzureTranslate extends AbstractProcessor {
 					JsonObject error = jsonObject.get("error").getAsJsonObject();
 					String code = error.get("code").getAsString();
 					String message = error.get("message").getAsString();
-					errorMap.put("code", code);
-					errorMap.put("message", message);
+					errorMap.put(acs_error_code, code);
+					errorMap.put(acs_error_message, message);
 					
 				}
 				catch(NullPointerException npe) {
-					errorMap.put("code", String.valueOf(status_code));
-					errorMap.put("message", "No message included in response");
+					errorMap.put(acs_error_code, String.valueOf(status_code));
+					errorMap.put(acs_error_message, "No message included in response");
 					
 				}
 				flowFile = session.putAllAttributes(flowFile, errorMap);
@@ -381,18 +346,18 @@ public class AzureTranslate extends AbstractProcessor {
 			}
 
 		} catch (IOException e) {
-			errorMap.put("Exception", e.getMessage());
+			errorMap.put("IO Exception", e.getMessage());
 			session.transfer(flowFile, REL_COMMS_FAILURE);
 			this.getLogger().debug(e.getMessage());
 		}
 	}// end onTrigger()
 
-//	private static String prettify(String json_text) {
-//		JsonParser parser = new JsonParser();
-//		JsonElement json = parser.parse(json_text);
-//		Gson gson = new GsonBuilder().setPrettyPrinting().create();
-//		return gson.toJson(json);
-//	}
+	private static String prettify(String json_text) {
+		JsonParser parser = new JsonParser();
+		JsonElement json = parser.parse(json_text);
+		Gson gson = new GsonBuilder().setPrettyPrinting().create();
+		return gson.toJson(json);
+	}
 
 	@OnScheduled
 	public void onScheduled(final ProcessContext context) {
