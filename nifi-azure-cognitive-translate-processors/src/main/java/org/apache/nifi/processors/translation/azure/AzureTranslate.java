@@ -66,8 +66,8 @@ public class AzureTranslate extends AbstractProcessor {
 	private List<PropertyDescriptor> descriptors;
 	private Set<Relationship> relationships;
 
-	final private static String acs_error_code = "acs-error-code";
-	final private static String acs_error_message = "acs-error-message";
+	final private static String acs_response_code = "acs-error-code";
+	final private static String acs_response_message = "acs-error-message";
 
 	// Request Headers
 //	private static String subscription_key = "****************";
@@ -118,8 +118,10 @@ public class AzureTranslate extends AbstractProcessor {
 			.displayName("API Version")
 			.name("api-version")
 			.description("Version of the API requested by the client. Value must be 3.0.")
-			.defaultValue(api_version).expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
-			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).allowableValues(api_version, api_version).required(true).build();
+			.defaultValue(api_version)
+//			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
+//			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+			.allowableValues(api_version).required(true).build();
 	
 	static final PropertyDescriptor CHARACTER_SET = new PropertyDescriptor.Builder()
 			.displayName("Character Set")
@@ -134,7 +136,7 @@ public class AzureTranslate extends AbstractProcessor {
 //	* from
 //	* to
 //	* api-version(above with the constants)
-	static final PropertyDescriptor fromLanguage = new PropertyDescriptor.Builder()
+	static final PropertyDescriptor FROM_LANGUAGE = new PropertyDescriptor.Builder()
 			.displayName("Input Language")
 			.name("from")
 			.description("The language of the text to be translated.  "
@@ -143,7 +145,7 @@ public class AzureTranslate extends AbstractProcessor {
 					+ "Language auto-detection will be applied if not specified.")
 			.expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_BLANK_VALIDATOR).required(false).build();
-	static final PropertyDescriptor toLanguage = new PropertyDescriptor.Builder()
+	static final PropertyDescriptor TO_LANGUAGE = new PropertyDescriptor.Builder()
 			.displayName("Target Language(s)")
 			.name("to")
 			.description("The language(s) into which the text will translated."
@@ -152,7 +154,7 @@ public class AzureTranslate extends AbstractProcessor {
 					+ "For multiple translations separate output languages separated by commas.")
 			.defaultValue("en").expressionLanguageSupported(ExpressionLanguageScope.FLOWFILE_ATTRIBUTES)
 			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).build();
-	static final PropertyDescriptor inputText = new PropertyDescriptor.Builder()
+	static final PropertyDescriptor INPUT_TEXT = new PropertyDescriptor.Builder()
 			.displayName("Input Text")
 			.name("input-text-attribute")
 			.description("The text to be translated.")
@@ -163,10 +165,10 @@ public class AzureTranslate extends AbstractProcessor {
 //			.addValidator(StandardValidators.NON_EMPTY_VALIDATOR).required(true).
 			.build();
 
-//	I think it is confusing to have both, should FlowFile content be a separate Processor to avoid confusion?
+//	Seems confusing to have both, should FlowFile content be a separate Processor to avoid confusion?
 //	Could inputText Property be disabled when translateContent is set to TRUE?
 //	This requires the FlowFile content to be purely the object of the translation
-	public static final PropertyDescriptor translateContent = new PropertyDescriptor.Builder()
+	public static final PropertyDescriptor TRANSLATE_CONTENT = new PropertyDescriptor.Builder()
 			.displayName("Translate Content")
 			.name("translate-content")
 			.description(
@@ -203,10 +205,10 @@ public class AzureTranslate extends AbstractProcessor {
 		descriptors.add(SERVICE_ENDPOINT);
 		descriptors.add(API_VERSION);
 		descriptors.add(CHARACTER_SET);
-		descriptors.add(fromLanguage);
-		descriptors.add(toLanguage);
-		descriptors.add(inputText);
-		descriptors.add(translateContent);
+		descriptors.add(FROM_LANGUAGE);
+		descriptors.add(TO_LANGUAGE);
+		descriptors.add(INPUT_TEXT);
+		descriptors.add(TRANSLATE_CONTENT);
 		this.descriptors = Collections.unmodifiableList(descriptors);
 
 		final Set<Relationship> relationships = new HashSet<>();
@@ -229,12 +231,12 @@ public class AzureTranslate extends AbstractProcessor {
 		String sub_region = context.getProperty(SUBSCRIPTION_REGION).evaluateAttributeExpressions(flowFile).getValue();
 		String api_version = context.getProperty(API_VERSION).evaluateAttributeExpressions(flowFile).getValue();
 		String service_endpoint = context.getProperty(SERVICE_ENDPOINT).evaluateAttributeExpressions(flowFile).getValue();
-		String from_language = context.getProperty(fromLanguage).evaluateAttributeExpressions(flowFile).getValue();
-		String to_language = context.getProperty(toLanguage).evaluateAttributeExpressions(flowFile).getValue();
+		String from_language = context.getProperty(FROM_LANGUAGE).evaluateAttributeExpressions(flowFile).getValue();
+		String to_language = context.getProperty(TO_LANGUAGE).evaluateAttributeExpressions(flowFile).getValue();
 
-		String input_text = context.getProperty(inputText).evaluateAttributeExpressions(flowFile).getValue();
+		String input_text = context.getProperty(INPUT_TEXT).evaluateAttributeExpressions(flowFile).getValue();
 		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
-		boolean translate_content = context.getProperty(translateContent).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
+		boolean translate_content = context.getProperty(TRANSLATE_CONTENT).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
 		
 		
 		JsonArray translationTextList = new JsonArray();
@@ -273,9 +275,9 @@ public class AzureTranslate extends AbstractProcessor {
 			.host(service_endpoint)
 			.addPathSegment("/translate")
 			.addQueryParameter(API_VERSION.getName(), api_version)
-			.addQueryParameter(toLanguage.getName(), to_language);
+			.addQueryParameter(TO_LANGUAGE.getName(), to_language);
 		if (null != from_language)
-			builder.addQueryParameter(fromLanguage.getName(), from_language);
+			builder.addQueryParameter(FROM_LANGUAGE.getName(), from_language);
 		
 		HttpUrl httpUrl = builder.build();
 
@@ -319,14 +321,13 @@ public class AzureTranslate extends AbstractProcessor {
 					JsonObject error = jsonObject.get("error").getAsJsonObject();
 					String code = error.get("code").getAsString();
 					String message = error.get("message").getAsString();
-					errorMap.put(acs_error_code, code);
-					errorMap.put(acs_error_message, message);
-					
+					errorMap.put(acs_response_code, code);
+					errorMap.put(acs_response_message, message);
+					this.getLogger().error(acs_response_code + ": " + acs_response_message);					
 				}
 				catch(NullPointerException npe) {
-					errorMap.put(acs_error_code, String.valueOf(status_code));
-					errorMap.put(acs_error_message, "No message included in response");
-					
+					errorMap.put("Null Pointer Exception", npe.getMessage());
+					this.getLogger().error(npe.getMessage());
 				}
 				flowFile = session.putAllAttributes(flowFile, errorMap);
 				flowFile = session.write(flowFile, new OutputStreamCallback() {
@@ -348,7 +349,7 @@ public class AzureTranslate extends AbstractProcessor {
 		} catch (IOException e) {
 			errorMap.put("IO Exception", e.getMessage());
 			session.transfer(flowFile, REL_COMMS_FAILURE);
-			this.getLogger().debug(e.getMessage());
+			this.getLogger().error(e.getMessage());
 		}
 	}// end onTrigger()
 
