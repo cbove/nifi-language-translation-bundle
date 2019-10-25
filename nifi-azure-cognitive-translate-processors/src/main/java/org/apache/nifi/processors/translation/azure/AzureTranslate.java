@@ -78,7 +78,6 @@ public class AzureTranslate extends AbstractProcessor {
 	private static String character_set = "UTF-8";
 //	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
 	private static String default_input_text = "Лучшее время, чтобы посадить дерево, было 20 лет назад. Следующее лучшее время – сегодня.";
-//	private static String default_input_text = "Привет, как ты сегодня?";
 //	private String authorization_token;
 
 	
