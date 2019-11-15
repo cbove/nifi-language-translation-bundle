@@ -199,6 +199,7 @@ public class AzureTranslate extends AbstractProcessor {
 
 	protected void init(final ProcessorInitializationContext context) {
 		final List<PropertyDescriptor> descriptors = new ArrayList<>();
+		
 		descriptors.add(SUBSCRIPTION_KEY);
 		descriptors.add(SUBSCRIPTION_REGION);
 		descriptors.add(SERVICE_ENDPOINT);
