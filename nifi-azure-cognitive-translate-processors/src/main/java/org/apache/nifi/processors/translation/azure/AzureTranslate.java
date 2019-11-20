@@ -70,7 +70,6 @@ public class AzureTranslate extends AbstractProcessor {
 	final private static String acs_response_message = "acs-error-message";
 
 	// Request Headers
-//	private static String subscription_key = "****************";
 	private static String protocol = "https";
 	private static String subscription_region = System.getenv("ACS_TRANSLATOR_TEXT_SUBCRIPTION_REGION");
 	private static String subscription_key = System.getenv("ACS_TRANSLATOR_TEXT_SUBSCRIPTION_KEY");
@@ -78,7 +77,6 @@ public class AzureTranslate extends AbstractProcessor {
 	private static String character_set = "UTF-8";
 //	private static String endpoint = "https://api-nam.cognitive.microsofttranslator.com";
 	private static String default_input_text = "Лучшее время, чтобы посадить дерево, было 20 лет назад. Следующее лучшее время – сегодня.";
-//	private String authorization_token;
 
 	
 //	Property Descriptors:
@@ -167,13 +165,13 @@ public class AzureTranslate extends AbstractProcessor {
 //	Seems confusing to have both, should FlowFile content be a separate Processor to avoid confusion?
 //	Could inputText Property be disabled when translateContent is set to TRUE?
 //	This requires the FlowFile content to be purely the object of the translation
-	public static final PropertyDescriptor TRANSLATE_CONTENT = new PropertyDescriptor.Builder()
-			.displayName("Translate Content")
-			.name("translate-content")
-			.description(
-					"Specifies whether or not the FlowFile content should be translated. If false, only the text specified by \"Input Text\" property will be translated.")
-			.required(true).allowableValues("true", "false")
-			.defaultValue("false").build();
+//	public static final PropertyDescriptor TRANSLATE_CONTENT = new PropertyDescriptor.Builder()
+//			.displayName("Translate Content")
+//			.name("translate-content")
+//			.description(
+//					"Specifies whether or not the FlowFile content should be translated. If false, only the text specified by \"Input Text\" property will be translated.")
+//			.required(true).allowableValues("true", "false")
+//			.defaultValue("false").build();
 	
 	
 	public Set<Relationship> getRelationships() {
@@ -208,7 +206,7 @@ public class AzureTranslate extends AbstractProcessor {
 		descriptors.add(FROM_LANGUAGE);
 		descriptors.add(TO_LANGUAGE);
 		descriptors.add(INPUT_TEXT);
-		descriptors.add(TRANSLATE_CONTENT);
+//		descriptors.add(TRANSLATE_CONTENT);
 		this.descriptors = Collections.unmodifiableList(descriptors);
 
 		final Set<Relationship> relationships = new HashSet<>();
@@ -236,7 +234,7 @@ public class AzureTranslate extends AbstractProcessor {
 
 		String input_text = context.getProperty(INPUT_TEXT).evaluateAttributeExpressions(flowFile).getValue();
 		String encoding = context.getProperty(CHARACTER_SET).evaluateAttributeExpressions(flowFile).getValue();
-		boolean translate_content = context.getProperty(TRANSLATE_CONTENT).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
+//		boolean translate_content = context.getProperty(TRANSLATE_CONTENT).evaluateAttributeExpressions(flowFile).asBoolean().booleanValue();
 		
 		
 		JsonArray translationTextList = new JsonArray();
@@ -250,19 +248,19 @@ public class AzureTranslate extends AbstractProcessor {
 			translationTextList.add(translationText);
 		}
 		
-		if(translate_content) {
-			byte[] buff = new byte[(int) flowFile.getSize()];
-			session.read(flowFile, new InputStreamCallback() {
-				@Override
-				public void process(final InputStream in) throws IOException {
-					StreamUtils.fillBuffer(in, buff);
-				}
-			});
-			JsonObject translationText = new JsonObject();
-			String content = new String(buff, Charset.forName(encoding));
-			translationText.addProperty("Text", content);
-			translationTextList.add(translationText);
-		}
+//		if(translate_content) {
+//			byte[] buff = new byte[(int) flowFile.getSize()];
+//			session.read(flowFile, new InputStreamCallback() {
+//				@Override
+//				public void process(final InputStream in) throws IOException {
+//					StreamUtils.fillBuffer(in, buff);
+//				}
+//			});
+//			JsonObject translationText = new JsonObject();
+//			String content = new String(buff, Charset.forName(encoding));
+//			translationText.addProperty("Text", content);
+//			translationTextList.add(translationText);
+//		}
 		String json = translationTextList.toString();
 		
 		this.getLogger().debug("\n^^^^^^^^^^^^^^^^^^^^: " + json + " :^^^^^^^^^^^^^^^^^^^^");
